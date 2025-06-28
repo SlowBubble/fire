@@ -1,0 +1,14 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // match /song-debug/{document=**} {
+    //   allow read;
+    //   allow write;
+    // }
+		match /{document=**} {
+      allow read;
+      allow create: if request.auth.token.email != '' && request.auth.token.email == request.resource.data.owner;
+      allow write, delete: if request.auth.token.email == resource.data.owner;
+    }
+  }
+}

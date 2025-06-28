@@ -302,6 +302,11 @@ export function setup(actionMgr, stateMgr, eBanner, disablePub, hasMidiInputsFun
     actionMgr.toggleClef();
   });
 
+  hotkeys('shift+b', evt => {
+    evt.preventDefault();
+    actionMgr.openBackingTrack();
+  });
+
   hotkeys('shift+w', evt => {
     evt.preventDefault();
     const name = window.prompt('Name of the composer');

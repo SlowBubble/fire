@@ -2,6 +2,7 @@
 import * as action from './action.js';
 import * as banner from './banner.js';
 import * as beat from './beat.js';
+import * as beat3 from './beat3.js';
 import * as event from './event.js';
 import * as midiInput from './midiInput.js';
 import * as musicKeyboard from './musicKeyboard.js';
@@ -110,6 +111,8 @@ export class MusicCanvas extends HTMLElement {
     new musicKeyboard.PossBeatFilter(keydownSub, possBeatPub, disablePub, midiInput.hasMidiInputs);
     new musicKeyboard.BeatFilter(disablePub, disableSub, possBeatSub, beatPub, beatModePub, eBanner, null, execPub);
 
+    // new beat3.Aggregator(
+    //   beatSub, notedownSub, beatModeSub, eBanner, stateMgr);
     new beat.Aggregator(
       beatSub, notedownSub, noteupSub, beatModeSub, aggrPub, appendPub, aggrStoppedPub, stateMgr);
     new beat.Rounder(aggrSub, roundedNotesPub);

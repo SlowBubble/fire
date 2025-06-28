@@ -6,7 +6,7 @@ export function setupHomeLink(htmlNode) {
     if (!user) {
       return;
     }
-    const homeUrl = new URL('/fire/', url.origin);
+    const homeUrl = new URL('/', url.origin);
     homeUrl.searchParams.set('owner', user.email);
     htmlNode.querySelector('#home-link').href = homeUrl.href;
   });
@@ -18,7 +18,7 @@ export function setupHomeButton(htmlNode) {
     if (!user) {
       return;
     }
-    const homeUrl = new URL('/fire/', url.origin);
+    const homeUrl = new URL('/', url.origin);
     homeUrl.searchParams.set('owner', user.email);
     htmlNode.querySelector('#home-control').onclick = _ => {
       window.location.href = homeUrl.href;

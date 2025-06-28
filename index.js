@@ -54,7 +54,7 @@ async function loadDocs(params) {
   const url = new URL(document.URL);
   docs.forEach(doc => {
     const an = document.createElement("a");
-    const songUrl = new URL('/fire/music.html', url.origin);
+    const songUrl = new URL('/music.html', url.origin);
     songUrl.searchParams.set('view', params.owner ? '0' : '1');
     songUrl.searchParams.set('id', doc.id);
     an.href = songUrl.href;

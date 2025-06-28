@@ -257,6 +257,14 @@ export class ActionMgr {
     document.body.removeChild(downloadLink);
   }
 
+  openBackingTrack() {
+    const title = encodeURIComponent(this.stateMgr.doc.title);
+    const data = encodeURIComponent(JSON.stringify(this.stateMgr.getAlternativeMusicStrings()));
+    console.log(JSON.stringify(this.stateMgr.getAlternativeMusicStrings(), null, 2))
+    const url = `https://slowbubble.github.io/MidiChordSheet/#title=${title}&data=${data}`;
+    window.open(url, '_blank');
+  }
+
   setKeySig() {
     this.exec(_ => {
       const chordStr = prompt('Key signature', this.stateMgr.getKeySig().toString());

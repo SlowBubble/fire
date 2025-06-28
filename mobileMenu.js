@@ -19,7 +19,7 @@ export function setupMobileTrumpet(shadowRoot, stateMgr) {
     stateMgr.quantize();
     stateMgr.save(false, _ => {
       const url = new URL(document.URL);
-      const songUrl = new URL('/fire/musicMobile.html', url.origin);
+      const songUrl = new URL('/musicMobile.html', url.origin);
       songUrl.searchParams.set('id', urlId);
       window.location.href = songUrl.href;
     });
@@ -46,7 +46,7 @@ export function setup(shadowRoot, actionMgr, stateMgr, disablePub) {
     disablePub();
     stateMgr.save(false, _ => {
       const url = new URL(document.URL);
-      const songUrl = new URL('/fire/music.html', url.origin);
+      const songUrl = new URL('/music.html', url.origin);
       songUrl.searchParams.set('id', stateMgr.urlId);
       songUrl.searchParams.set('view', '1');
       window.location.href = songUrl.href;

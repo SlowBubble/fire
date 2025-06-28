@@ -51,6 +51,9 @@ export function setup(shadowRoot, actionMgr, stateMgr) {
   shadowRoot.querySelector('#export-abc').onclick = _ => {
     actionMgr.exportAbc();
   };
+  shadowRoot.querySelector('#backing-track').onclick = _ => {
+    actionMgr.openBackingTrack();
+  }
   shadowRoot.querySelector('#insert-grace-note').onclick = _ => {
     actionMgr.insertGraceNote();
   };

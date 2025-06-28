@@ -890,7 +890,7 @@ export class Part {
 
   getLink() {
     const url = new URL(document.URL);
-    const songUrl = new URL('/fire/music.html', url.origin);
+    const songUrl = new URL('/music.html', url.origin);
     songUrl.searchParams.set('view', '1');
     songUrl.searchParams.set('id', this.id);
     songUrl.searchParams.set('shiftUp', this.shiftUp.toString());
@@ -1508,7 +1508,7 @@ export class StateMgr {
     const db = firebase.firestore();
     const collName = debug.version();
     db.collection(collName).doc(this.urlId).delete().then(_ => {
-      const homeUrl = new URL('/fire/', (new URL(document.URL)).origin);
+      const homeUrl = new URL('/', (new URL(document.URL)).origin);
       const currUser = firebase.auth().currentUser;
       if (currUser) {
         homeUrl.searchParams.set('owner', currUser.email);
@@ -3188,6 +3188,108 @@ L: ${this.abcNoteDuration.toString()}
 ${this._abcVoices().join('')}
 `;
   }
+
+  // This is an alternative format that I have invented.
+  // Iteration 1:
+  // The format is similar to getAbcStrings, returning a list of list of strings
+  // Each list of string is a row of measures of the first voice (i.e. the melody voice)
+  // Each string is a measure of the first voice, where you will display each note as A, B, ..., G (b is flat and # is sharp)
+  // Indicate the octave via the \ prefix for each octave above 60 and the / prefix for each octave below 60.
+  // Don't worry about the duration for now.
+  // Iteration 2:
+  // Put chords in as well (in listOfListOfChords).
+  // If there is no chord for a given measure, make sure to put in "_".
+  // The listOfListOfChords needs to have the same dimension as listOfListOfMelodies (by padding with "_"). 
+  // Iteration 3:
+  getAlternativeMusicStrings() {
+    // Returns a 2D array: lines of measures, each measure is a string of note names (A-G, b, #)
+    const melodyVoice = this.doc.voices[0];
+    if (!melodyVoice) return [];
+    const durationPerMeasure = this.getDurationPerMeasure();
+    const barsPerLine = 4;
+    const pickup = this.doc.pickup;
+    const numPickupMeas = -location.measureNum(pickup.negative(), durationPerMeasure);
+    // Split melody notes into lines and measures
+    const noteLines = locationsToLines(
+      chunking.periodicSplit(melodyVoice.noteGps.toArray(), durationPerMeasure),
+      durationPerMeasure, barsPerLine, numPickupMeas);
+    // Map each measure to a string of note names (A-G, b, #)
+    let prevNoteHasTie = false;
+    const listOfListOfMelodies = noteLines.map((line, lineIdx) => {
+      const res = line.map((measure, measIdx) => {
+        if (!measure || measure.length === 0) return '';
+        const isPickUpMeas = numPickupMeas > 0 && measIdx === 0 && lineIdx === 0;
+        let actualMeas = measure;
+        // Include an extra rest when doing pickup measure
+        if (isPickUpMeas) {
+          let totalDur = frac.build(0);
+          measure.forEach(noteGp => totalDur = totalDur.plus(noteGp.getDuration()));
+          const missingDur = durationPerMeasure.minus(totalDur);
+          if (missingDur.numer > 0) {
+            const end = measure[0].start;
+            actualMeas = [new NoteGp([new Note(null)], end.minus(missingDur), end)].concat(measure);
+          }
+        }
+        const denomLcm = lcm(actualMeas.map(noteGp => noteGp.getDuration().denom));
+        // Collect all note names in this measure
+        return actualMeas.map(noteGp => {
+          if (noteGp.isGraceNote()) {
+            return '';
+          }
+          const multiple = noteGp.getDuration().times(frac.build(denomLcm));
+          const arr = new Array(multiple.numer - 1).fill('_');
+          const res = [getAlternativeMelodicNoteString(noteGp, prevNoteHasTie)].concat(arr).join(' ');
+          prevNoteHasTie = noteGp.tie;
+          return res;
+        }).join(' ');
+      });
+      // TODO handle numPickupMeas > 1 as well.
+      if (lineIdx > 0 || (numPickupMeas === 0 && lineIdx === 0)) {
+        return [''].concat(res);
+      }
+      return res;
+    });
+    
+    const chordLines = locationsToLines(
+      this.doc.chordLocs,
+      durationPerMeasure, barsPerLine, numPickupMeas);
+      // Chords: each measure is a string of chord names (space separated), or "_" if none
+      const listOfListOfChords = chordLines.map((line, lineIdx) => {
+        const res = line.map(measure => {
+          if (!measure || measure.length === 0) return '_';
+          const chordNames = measure.map(loc => loc.chord ? loc.chord.toString() : '').filter(Boolean);
+          return chordNames.length ? chordNames.join(' ') : '_';
+        });
+        // TODO handle numPickupMeas > 1 as well.
+        if (lineIdx > 0 || (numPickupMeas === 0 && lineIdx === 0)) {
+          return [''].concat(res);
+        }
+        return res;
+      });
+
+    // Pad to same dimensions
+    const maxLines = Math.max(listOfListOfMelodies.length, listOfListOfChords.length);
+    const maxMeasures = Math.max(
+      ...listOfListOfMelodies.map(l => l.length),
+      ...listOfListOfChords.map(l => l.length)
+    );
+    while (listOfListOfMelodies.length < maxLines) listOfListOfMelodies.push(Array(maxMeasures).fill(''));
+    while (listOfListOfChords.length < maxLines) listOfListOfChords.push(Array(maxMeasures).fill('_'));
+    listOfListOfMelodies.forEach(line => { while (line.length < maxMeasures) line.push(''); });
+    listOfListOfChords.forEach(line => { while (line.length < maxMeasures) line.push('_'); });
+
+    const chordHeaders = [
+      ['', `Tempo: ${this.doc.tempo * 2}`],
+      ['', 'Part:'],
+    ];
+    if (this.doc.tempoStr === 'Swing') {
+      chordHeaders.push(['', 'Swing: medium']);
+    }
+    const melodyHeaders = [['', 'Voice:']];
+
+    // return chordHeaders.concat(listOfListOfChords);
+    return chordHeaders.concat(listOfListOfChords).concat(melodyHeaders.concat(listOfListOfMelodies));
+  }
 }
 
 // idx is the potential start of a beat.
@@ -3334,4 +3436,50 @@ function collapseGraceNotesToSimultaneousNotes(noteGps) {
     res.push(_merge(noteGpsToMerge));
   }
   return res;
+}
+
+function getAlternativeMelodicNoteString(noteGp, prevNoteHasTie){
+  if (noteGp.isGraceNote()) {
+    // TODO implement this
+    return '';
+  }
+  if (prevNoteHasTie) {
+    return '_';
+  }
+  const notes = noteGp.getNotes();
+  if (notes.length === 0) {
+    return 'X';
+  }
+  // Assuming the first note is the melody note.
+  const note = notes[0];
+  if (!note.noteNum) {
+    return 'X';
+  }
+  const spelling = note.spelling ? note.spelling : spell.fromNoteNum(note.noteNum);
+  let str = spelling.toString();
+  let octaveAbove = Math.floor((note.noteNum - 60)/12);
+  while (octaveAbove > 0) {
+    octaveAbove -= 1;
+    str = '\\' + str;
+  }
+  while (octaveAbove < 0) {
+    octaveAbove += 1;
+    str = '/' + str;
+  }
+  return str;
+}
+
+function lcm(numbers) {
+  if (!Array.isArray(numbers) || numbers.length === 0) return 1;
+  function gcd(a, b) {
+    while (b) {
+      [a, b] = [b, a % b];
+    }
+    return Math.abs(a);
+  }
+  function lcm2(a, b) {
+    if (a === 0 || b === 0) return 0;
+    return Math.abs(a * b) / gcd(a, b);
+  }
+  return numbers.reduce((acc, n) => lcm2(acc, n), 1);
 }

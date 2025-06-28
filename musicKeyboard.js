@@ -123,8 +123,8 @@ export class PossBeatFilter {
 // Interpret when to enable/disable beat mode:
 // 1. Enable after 1 quick shift key down-up.
 // 2. Disable if escape key is hit.
-// 3. Disable after 3 seconds of no beat event.
-const beatThreshold = 3000;
+// 3. Disable after 1.4 x beat duration.
+//   (TODO see if we should incorporate note down event also to decrease this even more)
 export class BeatFilter {
   constructor(disablePub, disableSub, possBeatSub, beatPub, beatModePub, ebanner, renderPub, execPub) {
     this.enabled = false;
@@ -133,10 +133,18 @@ export class BeatFilter {
     this.disablePub = disablePub;
     this.ebanner = ebanner;
 
+    this.beatThreshold = 3000;
+    this.prevBeatTime = null;
+
     // 1.
     possBeatSub(start => {
       this.extendEnable();
       beatPub(start);
+      if (this.prevBeatTime) {
+        const durMs = start - this.prevBeatTime;
+        this.beatThreshold = durMs * 1.4;
+      }
+      this.prevBeatTime = start;
     });
 
     disableSub(time => {
@@ -157,6 +165,8 @@ export class BeatFilter {
     }
     this.enabled = false;
     window.clearTimeout(this._disableId);
+    this.beatThreshold = 3000;
+    this.prevBeatTime = null;
     this.ebanner.display('Static mode');
     this.beatModePub(false, time);
   }
@@ -169,7 +179,7 @@ export class BeatFilter {
     window.clearTimeout(this._disableId);
     this._disableId = window.setTimeout(() => {
       this.disablePub();
-    }, beatThreshold);
+    }, this.beatThreshold);
   }
 
 }

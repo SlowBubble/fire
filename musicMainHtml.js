@@ -77,6 +77,7 @@ const leftPanel = `
   <div class='buttons'>
     <div>Output</div>
     <button id='export-abc'>Export (.abc)</button>
+    <button id='backing-track'>Backing Track</a>
   </div>
 
 </div>
