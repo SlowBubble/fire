@@ -1,8 +1,11 @@
+## How to deploy?
+
+`firebase deploy`
 
 ## Doing
 
 - Re-design Upserter to detect triplet across 2 beats
-
+  - beat3.Aggregator
 
 ## P1
 

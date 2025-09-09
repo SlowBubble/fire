@@ -3257,8 +3257,21 @@ ${this._abcVoices().join('')}
       const listOfListOfChords = chordLines.map((line, lineIdx) => {
         const res = line.map(measure => {
           if (!measure || measure.length === 0) return '_';
-          const chordNames = measure.map(loc => loc.chord ? loc.chord.toString() : '').filter(Boolean);
-          return chordNames.length ? chordNames.join(' ') : '_';
+          // Get measure duration and least common multiple of denominators for consistent spacing
+          const measureStart = measure[0].start;
+          const measureEnd = measureStart.plus(durationPerMeasure);
+          const denomLcm = lcm(measure.map((loc, idx) => {
+            const nextLoc = idx + 1 < measure.length ? measure[idx + 1].start : measureEnd;
+            return nextLoc.minus(loc.start).denom;
+          }));
+          // Process each chord in measure
+          return measure.map((loc, idx) => {
+            const nextLoc = idx + 1 < measure.length ? measure[idx + 1].start : measureEnd;
+            const duration = nextLoc.minus(loc.start);
+            const multiple = duration.times(frac.build(denomLcm));
+            const spacers = new Array(multiple.numer - 1).fill('_');
+            return [loc.chord ? loc.chord.toString() : '_'].concat(spacers).join(' ');
+          }).join(' ');
         });
         // TODO handle numPickupMeas > 1 as well.
         if (lineIdx > 0 || (numPickupMeas === 0 && lineIdx === 0)) {
