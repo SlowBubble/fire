@@ -3201,6 +3201,8 @@ ${this._abcVoices().join('')}
   // If there is no chord for a given measure, make sure to put in "_".
   // The listOfListOfChords needs to have the same dimension as listOfListOfMelodies (by padding with "_"). 
   // Iteration 3:
+  // Put lyrics in as well (in listOfListOfLyrics).
+  // How to know when to insert a list item or a list of list item? Use listOfListOfMelodies as the reference.
   getAlternativeMusicStrings() {
     // Returns a 2D array: lines of measures, each measure is a string of note names (A-G, b, #)
     const melodyVoice = this.doc.voices[0];
@@ -3279,6 +3281,34 @@ ${this._abcVoices().join('')}
         }
         return res;
       });
+    const tokens = this.doc.lyricsTokens;
+    let tokenIdx = 0;
+    const listOfListOfLyrics = noteLines.map((line, lineIdx) => {
+      const res = line.map(measure => {
+        let measureLyrics = [];
+        measure.forEach((noteGp, noteGpIdx) => {
+          if (tokenIdx >= tokens.length) {
+            measureLyrics.push('_');
+            return;
+          }
+          if (noteGp.isRest()) {
+            const isFirstNoteGpInPickUpMeas = noteGpIdx === 0 && lineIdx === 0 && numPickupMeas > 0;
+            if (!isFirstNoteGpInPickUpMeas) {
+              measureLyrics.push('_');
+            }
+            return;
+          }
+          measureLyrics.push(tokens[tokenIdx]);
+          tokenIdx++;
+        });
+        return measureLyrics.join(' ');
+      });
+      // TODO handle numPickupMeas > 1 as well.
+        if (lineIdx > 0 || (numPickupMeas === 0 && lineIdx === 0)) {
+          return [''].concat(res);
+        }
+        return res;
+      });
 
     // Pad to same dimensions
     const maxLines = Math.max(listOfListOfMelodies.length, listOfListOfChords.length);
@@ -3301,7 +3331,14 @@ ${this._abcVoices().join('')}
     const melodyHeaders = [['', 'Voice:']];
 
     // return chordHeaders.concat(listOfListOfChords);
-    return chordHeaders.concat(listOfListOfChords).concat(melodyHeaders.concat(listOfListOfMelodies));
+    let res = chordHeaders.concat(listOfListOfChords);
+    // We are assuming there is always melody for now.
+    res = res.concat(melodyHeaders.concat(listOfListOfMelodies));
+    if (tokens.length > 0) {
+      const lyricsHeaders = [['', 'Lyrics:']];
+      res = res.concat(lyricsHeaders.concat(listOfListOfLyrics));
+    }
+    return res;
   }
 }
 
