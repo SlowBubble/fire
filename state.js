@@ -505,8 +505,9 @@ function toLyricsTokens(lyricsString) {
   }).flatMap(phrase => {
     // 'gh如' => ['gh', '如']
     return splitBefore(phrase, asianRegexStr)
+  }).filter(token => {
+    return token.length > 0;
   });
-  return tokens;
 }
 
 function fromLyricsToken(tokens) {
@@ -1168,6 +1169,9 @@ export class StateMgr {
           if (this.doc.composer !== '') {
             partDoc.composer = this.doc.composer;
           }
+          if (partDoc.lyricsTokens.filter(token => token.length > 0).length === 0) {
+            partDoc.lyricsTokens.push(...Array(getNumberActualNotes(partDoc)).fill('_'));
+          }
 
           this.doc = partDoc;
         } else {
@@ -1194,10 +1198,11 @@ export class StateMgr {
     if (!doc.keySigSp.equals(this.doc.keySigSp)) {
       this.doc.keySigLocs.push(new KeySigLoc(doc.keySigSp, docStartTime));
     }
-    // TODO deal with the case where the firs doc does not have lyrics
-    // while the second doc has lyrics, by padding with _
-    if (doc.lyricsTokens) {
+    if (doc.lyricsTokens.filter(token => token.length > 0).length > 0) {
       this.doc.lyricsTokens.push(...doc.lyricsTokens);
+    } else {
+      // TODO test this with a real example.
+      this.doc.lyricsTokens.push(...Array(getNumberActualNotes(doc)).fill('_'));
     }
 
     this.disableChordMode();
@@ -3292,10 +3297,11 @@ ${this._abcVoices().join('')}
             return;
           }
           if (noteGp.isRest()) {
-            const isFirstNoteGpInPickUpMeas = noteGpIdx === 0 && lineIdx === 0 && numPickupMeas > 0;
-            if (!isFirstNoteGpInPickUpMeas) {
-              measureLyrics.push('_');
-            }
+            // TODO see if this is actually necessary, i.e. does MidiChordSheet know to skip a lyric token for a rest?
+            // const isFirstNoteGpInPickUpMeas = noteGpIdx === 0 && lineIdx === 0 && numPickupMeas > 0;
+            // if (!isFirstNoteGpInPickUpMeas) {
+            //   measureLyrics.push('_');
+            // }
             return;
           }
           measureLyrics.push(tokens[tokenIdx]);
@@ -3532,4 +3538,11 @@ function lcm(numbers) {
     return Math.abs(a * b) / gcd(a, b);
   }
   return numbers.reduce((acc, n) => lcm2(acc, n), 1);
+}
+
+function getNumberActualNotes(doc) {
+  const numNotes = doc.voices[0].noteGps.toArray().filter(noteGp => {
+    return !noteGp.isRest() && !noteGp.tie;
+  }).length;
+  return numNotes;
 }
