@@ -892,7 +892,7 @@ export class Part {
   getLink() {
     const url = new URL(document.URL);
     const songUrl = new URL('/music.html', url.origin);
-    songUrl.searchParams.set('view', '1');
+    // songUrl.searchParams.set('view', '1');
     songUrl.searchParams.set('id', this.id);
     songUrl.searchParams.set('shiftUp', this.shiftUp.toString());
     songUrl.searchParams.set('shiftIn', this.shiftIn.toString());
