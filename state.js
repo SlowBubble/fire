@@ -1412,6 +1412,20 @@ export class StateMgr {
     return this.editor.cursorTime;
   }
 
+  getCurrNoteNums() {
+    const voice = this.getCurrVoice();
+    if (!voice) {
+      return [];
+    }
+    const noteGp = voice.noteGps.getCurr();
+    if (!noteGp || noteGp.isRest()) {
+      return [];
+    }
+    return noteGp.getNotes().map(note => {
+      return note.noteNum;
+    });
+  }
+
   incrSeed() {
     this.seed += 1;
     return this.seed

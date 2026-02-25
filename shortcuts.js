@@ -1,6 +1,17 @@
 
 
-export function setup(actionMgr, stateMgr, eBanner, disablePub, hasMidiInputsFunc) {
+export function setup(actionMgr, stateMgr, eBanner, disablePub, hasMidiInputsFunc, notedownPub, noteupPub) {
+
+  function playCurrNote() {
+    if (!notedownPub || !noteupPub) {
+      return;
+    }
+    const noteNums = stateMgr.getCurrNoteNums();
+    if (noteNums.length) {
+      notedownPub(noteNums, Date.now());
+      setTimeout(() => noteupPub(noteNums, Date.now()), 100);
+    }
+  }
 
   hotkeys('a,b,c,d,e,f,g', evt => {
     if (!stateMgr.isChordMode()) {
@@ -87,7 +98,7 @@ export function setup(actionMgr, stateMgr, eBanner, disablePub, hasMidiInputsFun
 
   hotkeys(`${_cmdKeyString()}+shift+backspace`, evt => {
     evt.preventDefault();
-    if(!confirm('Delete document?')) {
+    if (!confirm('Delete document?')) {
       return;
     }
     actionMgr.exec(_ => {
@@ -152,6 +163,7 @@ export function setup(actionMgr, stateMgr, eBanner, disablePub, hasMidiInputsFun
     disablePub();
 
     actionMgr.exec(_ => {
+      playCurrNote();
       stateMgr.navRight();
     });
   });

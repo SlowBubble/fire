@@ -48,10 +48,12 @@ export class MusicCanvas extends HTMLElement {
     const [disablePub, disableSub] = event.pubsub();
     const [valveDownPub, valveDownSub] = event.pubsub();
     const [valveUpPub, valveUpSub] = event.pubsub();
+    const [previewdownPub, previewdownSub] = event.pubsub();
+    const [previewupPub, previewupSub] = event.pubsub();
     const url = new URL(document.URL);
     let urlId = url.searchParams.get('id');
     if (!urlId) {
-      urlId = (new Date).toISOString().replace(/:/g,'_');
+      urlId = (new Date).toISOString().replace(/:/g, '_');
       const newUrl = new URL(document.URL);
       newUrl.searchParams.set('id', urlId);
       window.location.href = newUrl.href;
@@ -82,7 +84,7 @@ export class MusicCanvas extends HTMLElement {
         ABCJS.renderMidi(
           shadowRoot.querySelector("#midi-div"),
           abc,
-          {chordsOff: true,});
+          { chordsOff: true, });
       }
     }
 
@@ -95,7 +97,7 @@ export class MusicCanvas extends HTMLElement {
     beatModeSub(bm => {
       if (!bm) {
         window.setTimeout(() => {
-          renderFunc();      
+          renderFunc();
         }, 20);
       }
     });
@@ -120,7 +122,7 @@ export class MusicCanvas extends HTMLElement {
     new beat.Upserter(
       roundedNotesSub, appendSub, stateMgr, actionMgr, resourceContentionDelayMillis);
 
-    shortcuts.setup(actionMgr, stateMgr, eBanner, disablePub, midiInput.hasMidiInputs);
+    shortcuts.setup(actionMgr, stateMgr, eBanner, disablePub, midiInput.hasMidiInputs, previewdownPub, previewupPub);
     menu.setup(shadowRoot, actionMgr, stateMgr);
 
     signIn.setupSignInButton(shadowRoot, eBanner);
@@ -131,7 +133,7 @@ export class MusicCanvas extends HTMLElement {
       sound.insertScriptsDynamically(shadowRoot);
       const pedalDelayMillis = 200;
       window.onload = _ => {
-        sound.setup(eBanner, notedownSub, noteupSub, pedalDelayMillis);
+        sound.setup(eBanner, [notedownSub, previewdownSub], [noteupSub, previewupSub], pedalDelayMillis);
       }
     }
   }
