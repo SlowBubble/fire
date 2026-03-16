@@ -136,6 +136,7 @@ export function setup(actionMgr, stateMgr, eBanner, disablePub, hasMidiInputsFun
     disablePub();
 
     actionMgr.exec(_ => {
+      stateMgr.setInitiallySelectedCursorTime(null);
       stateMgr.goDown();
     });
   });
@@ -145,6 +146,31 @@ export function setup(actionMgr, stateMgr, eBanner, disablePub, hasMidiInputsFun
     disablePub();
 
     actionMgr.exec(_ => {
+      stateMgr.setInitiallySelectedCursorTime(null);
+      stateMgr.goUp();
+    });
+  });
+
+  hotkeys('shift+down', evt => {
+    evt.preventDefault();
+    disablePub();
+
+    actionMgr.exec(_ => {
+      if (stateMgr.getInitiallySelectedCursorTime() === null) {
+        stateMgr.setInitiallySelectedCursorTime(stateMgr.getCursorTime());
+      }
+      stateMgr.goDown();
+    });
+  });
+
+  hotkeys('shift+up', evt => {
+    evt.preventDefault();
+    disablePub();
+
+    actionMgr.exec(_ => {
+      if (stateMgr.getInitiallySelectedCursorTime() === null) {
+        stateMgr.setInitiallySelectedCursorTime(stateMgr.getCursorTime());
+      }
       stateMgr.goUp();
     });
   });
@@ -154,6 +180,7 @@ export function setup(actionMgr, stateMgr, eBanner, disablePub, hasMidiInputsFun
     disablePub();
 
     actionMgr.exec(_ => {
+      stateMgr.setInitiallySelectedCursorTime(null);
       stateMgr.navLeft();
     });
   });
@@ -163,6 +190,32 @@ export function setup(actionMgr, stateMgr, eBanner, disablePub, hasMidiInputsFun
     disablePub();
 
     actionMgr.exec(_ => {
+      stateMgr.setInitiallySelectedCursorTime(null);
+      playCurrNote();
+      stateMgr.navRight();
+    });
+  });
+
+  hotkeys('shift+left', evt => {
+    evt.preventDefault();
+    disablePub();
+
+    actionMgr.exec(_ => {
+      if (stateMgr.getInitiallySelectedCursorTime() === null) {
+        stateMgr.setInitiallySelectedCursorTime(stateMgr.getCursorTime());
+      }
+      stateMgr.navLeft();
+    });
+  });
+
+  hotkeys('shift+right', evt => {
+    evt.preventDefault();
+    disablePub();
+
+    actionMgr.exec(_ => {
+      if (stateMgr.getInitiallySelectedCursorTime() === null) {
+        stateMgr.setInitiallySelectedCursorTime(stateMgr.getCursorTime());
+      }
       playCurrNote();
       stateMgr.navRight();
     });

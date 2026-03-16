@@ -32,7 +32,7 @@ function renderChordMeas(chordMeas, abcList, abcNoteDuration, measStartTime, mea
   chordMeas.forEach((chordLoc, idx) => {
     const endTime = (
       idx + 1 < chordMeas.length ? chordMeas[idx + 1].start :
-      measureEndTime);
+        measureEndTime);
     const dur = endTime.minus(chordLoc.start);
     const mult = frac.Frac.divides(dur, abcNoteDuration);
     const chordString = chordLoc.chord ? chordLoc.chord.toString() : '';
@@ -45,9 +45,9 @@ function renderChordMeas(chordMeas, abcList, abcNoteDuration, measStartTime, mea
 // chunks is a list of NoteGps.
 // Returns the current proximateChordIdx for the next renderMeas to use.
 function renderMeas(
-    chunks, abcList, currNoteGp, keySigSharpMap, timeSigDenom,
-    showNotesCursor, showSpelling, abcNoteDuration, chordLocs,
-    prevProximateChordIdx, measureEndTime, cursorTime) {
+  chunks, abcList, currNoteGp, keySigSharpMap, timeSigDenom,
+  showNotesCursor, showSpelling, abcNoteDuration, chordLocs,
+  prevProximateChordIdx, measureEndTime, cursorTime, initiallySelectedCursorTime) {
   if (chunks.length === 0) {
     return prevProximateChordIdx;
   }
@@ -63,8 +63,8 @@ function renderMeas(
 
       if (!noteGp.isGraceNote()) {
         // Display cursor at the unique non-grace noteGp that currNoteGp is associated with.
-        if (showNotesCursor) {_displayCursor(abcList, noteGp, currNoteGp, cursorTime);}
-        if (showSpelling) {_displaySpelling(abcList, noteGp, proximateChord);}
+        if (showNotesCursor) { _displayCursor(abcList, noteGp, currNoteGp, cursorTime, initiallySelectedCursorTime); }
+        if (showSpelling) { _displaySpelling(abcList, noteGp, proximateChord); }
       }
 
       // TODO think of how to make the grace note rendering cleaner.
@@ -74,7 +74,7 @@ function renderMeas(
         if (chunkIdx - 1 < 0 ||
           !(chunks[chunkIdx - 1] instanceof chunking.SingletonChunk) ||
           !chunks[chunkIdx - 1].getNoteGps()[0].isGraceNote()) {
-            abcList.push('{');
+          abcList.push('{');
         }
       }
 
@@ -89,7 +89,7 @@ function renderMeas(
         if (chunkIdx + 1 > chunks.length ||
           !(chunks[chunkIdx + 1] instanceof chunking.SingletonChunk) ||
           !chunks[chunkIdx + 1].getNoteGps()[0].isGraceNote()) {
-            abcList.push('}');
+          abcList.push('}');
         }
       }
     });
@@ -118,25 +118,28 @@ function _split(startTime, endTime, durationPerMeasure) {
   return res;
 }
 
-function _displayCursor(abcList, noteGp, currNoteGp, cursorTime) {
+function _displayCursor(abcList, noteGp, currNoteGp, cursorTime, initiallySelectedCursorTime) {
   // Use equality of start because other parts of currNoteGp
   // may have been changed.
   if (!currNoteGp) {
     return;
   }
-  if (!cursorTime.equals(noteGp.start)) {
-    return;
-  }
-  const cursor = '?';
-  abcList.push(`"<${cursor}"`);
 
-  if (!currNoteGp.isGraceNote()) {
-    return;
+  if (cursorTime && cursorTime.equals(noteGp.start)) {
+    const cursor = '?';
+    abcList.push(`"<${cursor}"`);
   }
 
-  const abcSpelling = spell.fromNoteNum(currNoteGp.getNotes()[0].noteNum);
-  // TODO think of better ways show that the cursor is pointing to a grace note.
-  abcList.push(`"<${abcSpelling}"`);
+  if (initiallySelectedCursorTime && initiallySelectedCursorTime.equals(noteGp.start)) {
+    const cursor = '!';
+    abcList.push(`"<${cursor}"`);
+  }
+
+  if (cursorTime && cursorTime.equals(noteGp.start) && currNoteGp.isGraceNote()) {
+    const abcSpelling = spell.fromNoteNum(currNoteGp.getNotes()[0].noteNum);
+    // TODO think of better ways show that the cursor is pointing to a grace note.
+    abcList.push(`"<${abcSpelling}"`);
+  }
 }
 
 function _displaySpelling(abcList, noteGp, proximateChord) {
@@ -149,14 +152,14 @@ function _displaySpelling(abcList, noteGp, proximateChord) {
     }
     const spelling = (
       note.spelling ? note.spelling :
-      spell.fromNoteNumWithChord(note.noteNum, proximateChord));
+        spell.fromNoteNumWithChord(note.noteNum, proximateChord));
     abcList.push(`">${spelling.toString()}"`);
   });
 }
 
 function _displayNoteGp(
-    abcList, noteGp, sharpMap, keySigSharpMap, proximateChord,
-    abcNoteDuration, timeSigDenom, chunk, idx) {
+  abcList, noteGp, sharpMap, keySigSharpMap, proximateChord,
+  abcNoteDuration, timeSigDenom, chunk, idx) {
   // Add space to break beams when denom is 4, 2 or 1 for timeSig 3/4 or 4/4, .
   if (idx === 0 && frac.build(timeSigDenom, noteGp.start.denom).isWhole()) {
     abcList.push(' ');
@@ -193,8 +196,8 @@ function _displayNoteGp(
 
 function _getProximateChordIdx(proximateChordIdx, noteGp, chordLocs) {
   // if (noteGp.start.lessThan(chordLocs[proximateChordIdx].start)) {
-    // TODO a good initial chord is the dominant of the starting chord; e.g. C7 -> F.
-    // return dominantChordOf(chordLocs[proximateChordIdx]);
+  // TODO a good initial chord is the dominant of the starting chord; e.g. C7 -> F.
+  // return dominantChordOf(chordLocs[proximateChordIdx]);
   // }
 
   for (let idx = proximateChordIdx + 1; idx < chordLocs.length; idx++) {
@@ -274,7 +277,7 @@ const noteNumToAbc = (note, sharpMap, keySigSharpMap, chord) => {
   const sharpMapKey = `${spelling.letter}${octaveNum}`;
   const prevNumSharps = (
     sharpMap[sharpMapKey] === undefined ?
-    keySigSharpMap[spelling.letter] || 0 : sharpMap[sharpMapKey]);
+      keySigSharpMap[spelling.letter] || 0 : sharpMap[sharpMapKey]);
   sharpMap[sharpMapKey] = spelling.numSharps;
 
   // Add natural if previous notes have accidentals.
@@ -308,10 +311,10 @@ function locationsToLines(locations, durationPerMeasure, barsPerLine, numPickupM
 
     // Fill in empty measures if the locations are sparse (e.g. chords or near the end for noteGps).
     while (measNum > measures.length - numPickupMeas) {
-      measures.push({content: [], measNum: measures.length - numPickupMeas});
+      measures.push({ content: [], measNum: measures.length - numPickupMeas });
     }
 
-    measures.push({content: currMeas, measNum: measNum});
+    measures.push({ content: currMeas, measNum: measNum });
   });
 
   // A line is an array of measures
@@ -360,7 +363,7 @@ export class Note {
 export class NoteGp {
   constructor(notes, start, end, tie, startMillis) {
     if (notes.length > 1) {
-      notes.sort((n1, n2) => { return n1.noteNum - n2.noteNum});
+      notes.sort((n1, n2) => { return n1.noteNum - n2.noteNum });
     }
     this.notes = notes;
     this.start = start;
@@ -549,7 +552,7 @@ export class Voice {
    * line 2:       8 | ...
    */
   getAbcStrings(abcNoteDuration, doc, showSpelling, chordLocs,
-    displayChords, showNotesCursor, idx, cursorTime) {
+    displayChords, showNotesCursor, idx, cursorTime, initiallySelectedCursorTime) {
     if (doc.displayMelodyOnly && idx !== 0) {
       return;
     }
@@ -585,10 +588,13 @@ export class Voice {
     abcList.push(` [K:${keySigSp.toString()}] `);
     const numLines = Math.max(noteLines.length, chordLinesToDisplay.length);
 
-    // Add cursor after the key sig for the no note lines case.
     if (!noteLines.length) {
       if (showNotesCursor) {
-        abcList.push(`"<${cursor}"x`);
+        let markers = `"<${cursor}"`;
+        if (initiallySelectedCursorTime) {
+          markers += `"<!"`;
+        }
+        abcList.push(`${markers}x`);
       }
     }
     if (!numLines) {
@@ -639,7 +645,8 @@ export class Voice {
           chunks,
           abcList, this.noteGps.getCurr(), keySigSharpMap,
           timeSigDenom, showNotesCursor, showSpelling,
-          abcNoteDuration, chordLocs, proximateChordIdx, measEndTime, cursorTime);
+          abcNoteDuration, chordLocs, proximateChordIdx, measEndTime, cursorTime,
+          initiallySelectedCursorTime);
 
         // Separate meas and chordMeas as 2 voice parts.
         if (noteMeas.length > 0
@@ -659,7 +666,11 @@ export class Voice {
           if (cursorOnNextMeas) {
             abcList.push(` | `);
           }
-          abcList.push(`"<${cursor}"x`);
+          let markers = `"<${cursor}"`;
+          if (initiallySelectedCursorTime && measEndTime.equals(initiallySelectedCursorTime)) {
+            markers += `"<!"`;
+          }
+          abcList.push(`${markers}x`);
           if (!cursorOnNextMeas) {
             abcList.push(` | `);
           }
@@ -837,7 +848,7 @@ class Doc {
   }
 
   shiftToKey(newKeySp, shiftUp) {
-    const  shift = math.mod(newKeySp.toNoteNum() - this.keySigSp.toNoteNum(), 12) + shiftUp * 12;
+    const shift = math.mod(newKeySp.toNoteNum() - this.keySigSp.toNoteNum(), 12) + shiftUp * 12;
     // 1. Chords
     this.chordLocs.forEach(chordLoc => {
       chordLoc.chord.root = chordLoc.chord.root.shift(this.keySigSp, newKeySp, shift);
@@ -864,11 +875,12 @@ class Doc {
 }
 
 export class Editor {
-  constructor(step, currVoiceIdx, cursorOnChords, cursorTime) {
+  constructor(step, currVoiceIdx, cursorOnChords, cursorTime, initiallySelectedCursorTime) {
     this.step = step || frac.build(1, 4);
     this.currVoiceIdx = currVoiceIdx || 0;
     this.cursorOnChords = cursorOnChords || false;
     this.cursorTime = cursorTime || new frac.build(0);
+    this.initiallySelectedCursorTime = initiallySelectedCursorTime || null;
   }
 
   static fromJson(json) {
@@ -876,7 +888,8 @@ export class Editor {
       frac.fromJson(json.step),
       json.currVoiceIdx,
       json.cursorOnChords,
-      frac.fromJson(json.cursorTime));
+      frac.fromJson(json.cursorTime),
+      json.initiallySelectedCursorTime ? frac.fromJson(json.initiallySelectedCursorTime) : null);
   }
 
 }
@@ -896,9 +909,9 @@ export class Part {
     songUrl.searchParams.set('id', this.id);
     songUrl.searchParams.set('shiftUp', this.shiftUp.toString());
     songUrl.searchParams.set('shiftIn', this.shiftIn.toString());
-        if (this.keySigSp) {
-          songUrl.searchParams.set('keySig', this.keySigSp.toString());
-        }
+    if (this.keySigSp) {
+      songUrl.searchParams.set('keySig', this.keySigSp.toString());
+    }
     return songUrl.href;
   }
 
@@ -971,7 +984,7 @@ export class StateMgr {
     this.editor = Editor.fromJson(json.editor);
     this.setCursorTimeSyncPointer(this.getCursorTime());
 
-    this.parts = json.parts ? json.parts.map(pJson => {return Part.fromJson(pJson); }) : [];
+    this.parts = json.parts ? json.parts.map(pJson => { return Part.fromJson(pJson); }) : [];
     this.loadParts();
 
     const url = new URL(document.URL);
@@ -1044,7 +1057,7 @@ export class StateMgr {
     }
     arr.forEach((noteGp, idx) => {
       this.upsertByDur(
-        noteGp.notes.map(note => {return note.noteNum;}),
+        noteGp.notes.map(note => { return note.noteNum; }),
         projectedDurs[idx],
         noteGp.startMillis);
     });
@@ -1191,7 +1204,7 @@ export class StateMgr {
     const maxEndTimeIsNextMeasTime = possNextMeasTime.equals(maxEndTime);
     const nextMeasTime = (
       maxEndTimeIsNextMeasTime ? maxEndTime :
-      location.measureNumToTime(measNum + 1, durPerMeas, this.doc.pickup));
+        location.measureNumToTime(measNum + 1, durPerMeas, this.doc.pickup));
     const currMeasTime = nextMeasTime.minus(durPerMeas);
     const shiftTime = shiftIn ? currMeasTime : nextMeasTime;
     const docStartTime = (shiftIn ? currMeasTime : nextMeasTime).minus(doc.pickup);
@@ -1344,7 +1357,7 @@ export class StateMgr {
     let chordObj;
     try {
       chordObj = chd.fromJson(Parser.parse(chordStr));
-    } catch(err) {
+    } catch (err) {
       console.warn('failed to parse chord: ', chordStr, err);
       this.ebanner.display('failed to parse chord: ' + chordStr);
       return false;
@@ -1410,6 +1423,14 @@ export class StateMgr {
 
   getCursorTime() {
     return this.editor.cursorTime;
+  }
+
+  getInitiallySelectedCursorTime() {
+    return this.editor.initiallySelectedCursorTime;
+  }
+
+  setInitiallySelectedCursorTime(time) {
+    this.editor.initiallySelectedCursorTime = time;
   }
 
   getCurrNoteNums() {
@@ -1532,7 +1553,7 @@ export class StateMgr {
       if (currUser) {
         homeUrl.searchParams.set('owner', currUser.email);
       }
-      window.location.href =homeUrl.href;
+      window.location.href = homeUrl.href;
     }).catch(error => {
       this.ebanner.slowDisplay("Error removing document: " + error.message);
       console.error("Error removing document: ", error);
@@ -1758,8 +1779,8 @@ export class StateMgr {
       const res = [];
       const newNoteGpsStart = (
         newNoteGpsArr.length === 0 ?
-        beatEndTime :
-        newNoteGpsArr[0].start
+          beatEndTime :
+          newNoteGpsArr[0].start
       );
 
       res.push(...noteGpsLeftOfCursor.filter(noteGp => {
@@ -1934,6 +1955,10 @@ export class StateMgr {
 
   // leftMost: if true, when cursorTime points to multiple notes
   // (due to grace notes) go to the leftMost one. If false, the
+  setInitiallySelectedCursorTime(t) {
+    this.editor.initiallySelectedCursorTime = t;
+  }
+
   // cursor will stay at the first note with the correct start.
   setCursorTimeSyncPointer(cursorTime, leftMost) {
     this.editor.cursorTime = cursorTime;
@@ -2243,7 +2268,7 @@ export class StateMgr {
 
     const db = firebase.firestore();
     const collName = debug.version();
-    const id = clone ? (new Date).toISOString().replace(/:/g,'_') : this.urlId;
+    const id = clone ? (new Date).toISOString().replace(/:/g, '_') : this.urlId;
     db.collection(collName).doc(id).set({
       id: id,
       title: this.doc.title,
@@ -2305,7 +2330,7 @@ export class StateMgr {
 
       const rand = Math.random();
       let dur1 = eighth;
-      if (rand < 1/3 && eighth.lessThan(eighth)) {
+      if (rand < 1 / 3 && eighth.lessThan(eighth)) {
         dur1 = eighth.times(frac.build(2));
       }
       if (Math.random() < quietFactor) {
@@ -2326,7 +2351,7 @@ export class StateMgr {
 
       const rand3 = Math.random();
       let notes1 = [noteNums[1]];
-      const beatLike = rand3 < 1/3;
+      const beatLike = rand3 < 1 / 3;
       let idx3 = 2;
       if (beatLike) {
         notes1 = [noteNums[1], noteNums[2]];
@@ -2348,11 +2373,11 @@ export class StateMgr {
       const rand4 = Math.random();
       let quiet = true;
       let dur3 = remainder;
-      if (rand4 < 1/12) {
+      if (rand4 < 1 / 12) {
         dur3 = eighth;
-      } else if (rand4 < 3/12) {
+      } else if (rand4 < 3 / 12) {
         dur3 = eighth.times(frac.build(2));
-      } else if (rand4 < 7/12) {
+      } else if (rand4 < 7 / 12) {
         quiet = false;
       }
       if (beatLike || !quiet) {
@@ -2401,7 +2426,7 @@ export class StateMgr {
       }
       const rand5 = Math.random();
       let dur4 = remainder;
-      if (rand5 < 1/3) {
+      if (rand5 < 1 / 3) {
         dur4 = eighth;
       }
       const noteNums2 = chord.chordTonesAbove(noteNums[0] + 7);
@@ -2412,7 +2437,7 @@ export class StateMgr {
       }
       const rand6 = Math.random();
       let idx9 = 0;
-      if (rand6 < 1/3) {
+      if (rand6 < 1 / 3) {
         idx9 = 2;
       }
       this.upsertByDur([noteNums2[idx9]], remainder);
@@ -2475,23 +2500,23 @@ export class StateMgr {
     let shiftIdx1;
     let shiftIdx2;
     let shiftIdx3;
-    if (shiftIdxRand < 1/10) {
+    if (shiftIdxRand < 1 / 10) {
       shiftIdx1 = 0;
       shiftIdx2 = 1;
       shiftIdx3 = 2;
-    } else if (shiftIdxRand < 2/10) {
+    } else if (shiftIdxRand < 2 / 10) {
       shiftIdx1 = 0;
       shiftIdx2 = -1;
       shiftIdx3 = 1;
-    } else if (shiftIdxRand < 4/10) {
+    } else if (shiftIdxRand < 4 / 10) {
       shiftIdx1 = -1;
       shiftIdx2 = 0;
       shiftIdx3 = 1;
-    } else if (shiftIdxRand < 6/10) {
+    } else if (shiftIdxRand < 6 / 10) {
       shiftIdx1 = 1;
       shiftIdx2 = 0;
       shiftIdx3 = 2;
-    } else if (shiftIdxRand < 8/10) {
+    } else if (shiftIdxRand < 8 / 10) {
       shiftIdx1 = 1;
       shiftIdx2 = 2;
       shiftIdx3 = 1;
@@ -2501,12 +2526,12 @@ export class StateMgr {
       shiftIdx3 = 0;
     }
     let dur1 = frac.build(1, 8);
-    let notes1 = [notes0[1+shiftIdx1]];
+    let notes1 = [notes0[1 + shiftIdx1]];
     if (dur0.equals(frac.build(1, 2)) && Math.random() < 0.3) {
-      dur1 = frac.build(1,2);
-      notes1 = [notes0[1+shiftIdx1], notes0[shiftIdx1 <= -1 ? 2 : shiftIdx1]];
-    } else if (remainder.geq(frac.build(1,4)) && Math.random() < 0.5) {
-      dur1 = frac.build(1,4);
+      dur1 = frac.build(1, 2);
+      notes1 = [notes0[1 + shiftIdx1], notes0[shiftIdx1 <= -1 ? 2 : shiftIdx1]];
+    } else if (remainder.geq(frac.build(1, 4)) && Math.random() < 0.5) {
+      dur1 = frac.build(1, 4);
     }
     this.upsertByDur(notes1, dur1);
     remainder = remainder.minus(dur1);
@@ -2515,17 +2540,17 @@ export class StateMgr {
     }
 
     let dur2 = frac.build(1, 8);
-    let notes2 = [notes0[1+shiftIdx2]];
+    let notes2 = [notes0[1 + shiftIdx2]];
     const dur2Rand = Math.random();
     if (dur2Rand < 2 / 4 && remainder.geq(frac.build(1, 4))) {
       dur2 = frac.build(1, 4);
       if (Math.random() < 0.2) {
-        notes2 = [notes0[1+shiftIdx2], notes0[shiftIdx2 <= -1 ? 2 : shiftIdx2]];
+        notes2 = [notes0[1 + shiftIdx2], notes0[shiftIdx2 <= -1 ? 2 : shiftIdx2]];
       }
     } else if (dur2Rand < 3 / 4 && remainder.geq(frac.build(3, 8))) {
       dur2 = frac.build(3, 8);
       if (Math.random() < 0.4) {
-        notes2 = [notes0[1+shiftIdx2], notes0[shiftIdx2 <= -1 ? 2 : shiftIdx2]];
+        notes2 = [notes0[1 + shiftIdx2], notes0[shiftIdx2 <= -1 ? 2 : shiftIdx2]];
       }
     }
     this.upsertByDur(notes2, dur2);
@@ -2533,9 +2558,9 @@ export class StateMgr {
     if (remainder.toFloat() <= 0) {
       return;
     }
-    let notes3 = [notes0[1+shiftIdx3]];
+    let notes3 = [notes0[1 + shiftIdx3]];
     if (remainder.geq(frac.build(3, 8)) && Math.random() < 0.4) {
-      notes3 = [notes0[1+shiftIdx3], notes0[shiftIdx3 <= -1 ? 2 : shiftIdx3]];
+      notes3 = [notes0[1 + shiftIdx3], notes0[shiftIdx3 <= -1 ? 2 : shiftIdx3]];
     }
     this.upsertByDur(notes3, remainder);
     // remainder = remainder.minus(dur2);
@@ -2558,7 +2583,7 @@ export class StateMgr {
     const twoBeat = slot.duration.equals(frac.build(2, 4));
     if (twoBeat) {
       const rand = Math.random();
-      if (rand < 1/3) {
+      if (rand < 1 / 3) {
         dur2 = frac.build(1, 8);
       } else {
         dur2 = frac.build(1, 4);
@@ -2567,11 +2592,11 @@ export class StateMgr {
     const threeBeat = slot.duration.equals(frac.build(3, 4));
     if (threeBeat) {
       const rand = Math.random();
-      if (rand < 1/4) {
+      if (rand < 1 / 4) {
         dur2 = frac.build(1, 8);
-      } else if (rand < 2/4) {
+      } else if (rand < 2 / 4) {
         dur2 = frac.build(1, 4);
-      } else if (rand < 3/4) {
+      } else if (rand < 3 / 4) {
         dur2 = frac.build(3, 8);
       } else {
         dur2 = frac.build(2, 4);
@@ -2580,9 +2605,9 @@ export class StateMgr {
     const fourBeat = slot.duration.equals(frac.build(4, 4));
     if (fourBeat) {
       const rand = Math.random();
-      if (rand < 3/8) {
+      if (rand < 3 / 8) {
         dur2 = frac.build(1, 4);
-      } else if (rand < 5/8) {
+      } else if (rand < 5 / 8) {
         dur2 = frac.build(3, 8);
       } else {
         dur2 = frac.build(2, 4);
@@ -3063,7 +3088,7 @@ export class StateMgr {
       const showChordsCursor = !this.viewMode && showChords && this.editor.cursorOnChords;
       const chordLocs = (
         showChordsCursor ? addChordCursor(this.doc.chordLocs, this.getCursorTime()) :
-        this.doc.chordLocs);
+          this.doc.chordLocs);
       const showNotesCursor = !this.viewMode && !this.editor.cursorOnChords && idx === this.editor.currVoiceIdx;
       return voice.getAbcStrings(
         this.abcNoteDuration,
@@ -3073,7 +3098,8 @@ export class StateMgr {
         showChords,
         showNotesCursor,
         idx,
-        this.getCursorTime());
+        this.getCursorTime(),
+        this.getInitiallySelectedCursorTime());
     }).flat();
   }
 
@@ -3105,7 +3131,7 @@ export class StateMgr {
       return;
     }
     const noteGps = this.getCurrVoice().noteGps;
-    while(!noteGps.atTail()) {
+    while (!noteGps.atTail()) {
       this.skipRight();
       this.unsafeRemoveFromNoteGps();
     }
@@ -3150,7 +3176,7 @@ export class StateMgr {
       let chordLocs;
       try {
         chordLocs = json.map(loc => { return ChordLoc.fromJson(loc); });
-      } catch(err) {
+      } catch (err) {
         this.ebanner.display('Error: Pasting non-chord JSON.');
         console.log('Pasting non-chord JSON.', err, json);
         return;
@@ -3166,7 +3192,7 @@ export class StateMgr {
     let voice;
     try {
       voice = Voice.fromJson(json);
-    } catch(err) {
+    } catch (err) {
       this.ebanner.display('Error: Pasting non-voice JSON.');
       console.log('Pasting non-voice JSON.', err, json);
       return;
@@ -3187,7 +3213,7 @@ export class StateMgr {
     });
     noteGpsArr.forEach(noteGp => {
       this.upsertByDur(
-        noteGp.notes.map(note => {return note.noteNum;}),
+        noteGp.notes.map(note => { return note.noteNum; }),
         noteGp.end.minus(noteGp.start));
     });
     if (stationaryCursor) {
@@ -3270,36 +3296,36 @@ ${this._abcVoices().join('')}
       }
       return res;
     });
-    
+
     const chordLines = locationsToLines(
       this.doc.chordLocs,
       durationPerMeasure, barsPerLine, numPickupMeas);
-      // Chords: each measure is a string of chord names (space separated), or "_" if none
-      const listOfListOfChords = chordLines.map((line, lineIdx) => {
-        const res = line.map(measure => {
-          if (!measure || measure.length === 0) return '_';
-          // Get measure duration and least common multiple of denominators for consistent spacing
-          const measureStart = measure[0].start;
-          const measureEnd = measureStart.plus(durationPerMeasure);
-          const denomLcm = lcm(measure.map((loc, idx) => {
-            const nextLoc = idx + 1 < measure.length ? measure[idx + 1].start : measureEnd;
-            return nextLoc.minus(loc.start).denom;
-          }));
-          // Process each chord in measure
-          return measure.map((loc, idx) => {
-            const nextLoc = idx + 1 < measure.length ? measure[idx + 1].start : measureEnd;
-            const duration = nextLoc.minus(loc.start);
-            const multiple = duration.times(frac.build(denomLcm));
-            const spacers = new Array(multiple.numer - 1).fill('_');
-            return [loc.chord ? loc.chord.toString() : '_'].concat(spacers).join(' ');
-          }).join(' ');
-        });
-        // TODO handle numPickupMeas > 1 as well.
-        if (lineIdx > 0 || (numPickupMeas === 0 && lineIdx === 0)) {
-          return [''].concat(res);
-        }
-        return res;
+    // Chords: each measure is a string of chord names (space separated), or "_" if none
+    const listOfListOfChords = chordLines.map((line, lineIdx) => {
+      const res = line.map(measure => {
+        if (!measure || measure.length === 0) return '_';
+        // Get measure duration and least common multiple of denominators for consistent spacing
+        const measureStart = measure[0].start;
+        const measureEnd = measureStart.plus(durationPerMeasure);
+        const denomLcm = lcm(measure.map((loc, idx) => {
+          const nextLoc = idx + 1 < measure.length ? measure[idx + 1].start : measureEnd;
+          return nextLoc.minus(loc.start).denom;
+        }));
+        // Process each chord in measure
+        return measure.map((loc, idx) => {
+          const nextLoc = idx + 1 < measure.length ? measure[idx + 1].start : measureEnd;
+          const duration = nextLoc.minus(loc.start);
+          const multiple = duration.times(frac.build(denomLcm));
+          const spacers = new Array(multiple.numer - 1).fill('_');
+          return [loc.chord ? loc.chord.toString() : '_'].concat(spacers).join(' ');
+        }).join(' ');
       });
+      // TODO handle numPickupMeas > 1 as well.
+      if (lineIdx > 0 || (numPickupMeas === 0 && lineIdx === 0)) {
+        return [''].concat(res);
+      }
+      return res;
+    });
     const tokens = this.doc.lyricsTokens;
     let tokenIdx = 0;
     const listOfListOfLyrics = noteLines.map((line, lineIdx) => {
@@ -3324,11 +3350,11 @@ ${this._abcVoices().join('')}
         return measureLyrics.join(' ');
       });
       // TODO handle numPickupMeas > 1 as well.
-        if (lineIdx > 0 || (numPickupMeas === 0 && lineIdx === 0)) {
-          return [''].concat(res);
-        }
-        return res;
-      });
+      if (lineIdx > 0 || (numPickupMeas === 0 && lineIdx === 0)) {
+        return [''].concat(res);
+      }
+      return res;
+    });
 
     // Pad to same dimensions
     const maxLines = Math.max(listOfListOfMelodies.length, listOfListOfChords.length);
@@ -3385,7 +3411,7 @@ function _swingifyOneBeat(noteGpsArr, idx) {
     }
     const newDur0 = (
       dur0.lessThan(frac.build(1, 8)) ? frac.build(1, 12)
-      : frac.build(1, 6));
+        : frac.build(1, 6));
     noteGp0.end = noteGp0.start.plus(newDur0);
     noteGp1.start = noteGp0.end;
     return;
@@ -3409,23 +3435,23 @@ function _swingifyOneBeat(noteGpsArr, idx) {
 function findUpsertIdx(inputChordLocs, time) {
   // Case 1: on the far left.
   if (inputChordLocs.length === 0 || time.lessThan(inputChordLocs[0].start)) {
-    return {idx: 0, update: false};
+    return { idx: 0, update: false };
   }
-  for (let idx = 0; idx < inputChordLocs.length; idx++ ) {
+  for (let idx = 0; idx < inputChordLocs.length; idx++) {
     const chordLoc = inputChordLocs[idx];
     // Case 2: time is at idx
     if (time.equals(chordLoc.start)) {
-      return {idx: idx, update: true};
+      return { idx: idx, update: true };
     }
     // Case 4: on the far right.
     if (idx + 1 >= inputChordLocs.length) {
-      return {idx: inputChordLocs.length, update: false};
+      return { idx: inputChordLocs.length, update: false };
     }
     // Case 3: time is sandwiched between idx and idx + 1
-    const nextChordLoc = inputChordLocs[idx+1];
+    const nextChordLoc = inputChordLocs[idx + 1];
     const sandwiched = chordLoc.start.lessThan(time) && time.lessThan(nextChordLoc.start);
     if (sandwiched) {
-      return {idx: idx + 1, update: false};
+      return { idx: idx + 1, update: false };
     }
   }
   // Impossible.
@@ -3457,7 +3483,7 @@ function _parseChordStr(chordStr, ebanner) {
   }
   try {
     return chd.fromJson(Parser.parse(chordStr));
-  } catch(err) {
+  } catch (err) {
     if (ebanner) {
       ebanner.display('failed to parse chord: ' + chordStr);
     }
@@ -3482,7 +3508,7 @@ function collapseGraceNotesToSimultaneousNotes(noteGps) {
     noteGpsToMerge.forEach(noteGp => {
       notes.push(...noteGp.notes);
     });
-  return new NoteGp(notes, lastNoteGp.start, lastNoteGp.end, lastNoteGp.tie);
+    return new NoteGp(notes, lastNoteGp.start, lastNoteGp.end, lastNoteGp.tie);
   }
 
   const res = [];
@@ -3508,7 +3534,7 @@ function collapseGraceNotesToSimultaneousNotes(noteGps) {
   return res;
 }
 
-function getAlternativeMelodicNoteString(noteGp, prevNoteHasTie){
+function getAlternativeMelodicNoteString(noteGp, prevNoteHasTie) {
   if (noteGp.isGraceNote()) {
     // TODO implement this
     return '';
@@ -3527,7 +3553,7 @@ function getAlternativeMelodicNoteString(noteGp, prevNoteHasTie){
   }
   const spelling = note.spelling ? note.spelling : spell.fromNoteNum(note.noteNum);
   let str = spelling.toString();
-  let octaveAbove = Math.floor((note.noteNum - 60)/12);
+  let octaveAbove = Math.floor((note.noteNum - 60) / 12);
   while (octaveAbove > 0) {
     octaveAbove -= 1;
     str = '\\' + str;
