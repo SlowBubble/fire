@@ -52,7 +52,7 @@ export function setup(shadowRoot, actionMgr, stateMgr) {
     actionMgr.exportAbc();
   };
   shadowRoot.querySelector('#backing-track').onclick = _ => {
-    actionMgr.openBackingTrack();
+    actionMgr.openBackingTrack(true);
   }
   shadowRoot.querySelector('#insert-grace-note').onclick = _ => {
     actionMgr.insertGraceNote();

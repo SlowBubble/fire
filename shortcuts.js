@@ -317,7 +317,7 @@ export function setup(actionMgr, stateMgr, eBanner, disablePub, hasMidiInputsFun
 
   hotkeys(`shift+z`, evt => {
     evt.preventDefault();
-    actionMgr.openBackingTrack();
+    stateMgr.save(false, () => actionMgr.openBackingTrack());
   });
 
   hotkeys('shift+b', evt => {
