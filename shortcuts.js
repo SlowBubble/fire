@@ -245,11 +245,6 @@ export function setup(actionMgr, stateMgr, eBanner, disablePub, hasMidiInputsFun
 
   hotkeys(`shift+v`, evt => {
     evt.preventDefault();
-    actionMgr.openBackingTrack();
-  });
-
-  hotkeys(`${_cmdKeyString()}+shift+v`, evt => {
-    evt.preventDefault();
     stateMgr.toggleView();
   });
 
@@ -318,6 +313,11 @@ export function setup(actionMgr, stateMgr, eBanner, disablePub, hasMidiInputsFun
   hotkeys('shift+c', evt => {
     evt.preventDefault();
     actionMgr.toggleClef();
+  });
+
+  hotkeys(`shift+z`, evt => {
+    evt.preventDefault();
+    actionMgr.openBackingTrack();
   });
 
   hotkeys('shift+b', evt => {
