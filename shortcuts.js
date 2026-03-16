@@ -244,6 +244,12 @@ export function setup(actionMgr, stateMgr, eBanner, disablePub, hasMidiInputsFun
   });
 
   hotkeys(`shift+v`, evt => {
+    evt.preventDefault();
+    actionMgr.openBackingTrack();
+  });
+
+  hotkeys(`${_cmdKeyString()}+shift+v`, evt => {
+    evt.preventDefault();
     stateMgr.toggleView();
   });
 
@@ -316,7 +322,7 @@ export function setup(actionMgr, stateMgr, eBanner, disablePub, hasMidiInputsFun
 
   hotkeys('shift+b', evt => {
     evt.preventDefault();
-    actionMgr.openBackingTrack();
+    actionMgr.openBackingTrack(true);
   });
 
   hotkeys('shift+w', evt => {

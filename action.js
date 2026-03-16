@@ -246,7 +246,7 @@ export class ActionMgr {
   }
 
   exportAbc() {
-    const blob = new Blob([this.stateMgr.getAbc()], {type:"text/plain;charset=utf-8"});
+    const blob = new Blob([this.stateMgr.getAbc()], { type: "text/plain;charset=utf-8" });
     const blobUrl = URL.createObjectURL(blob);
     const downloadLink = document.createElement("a");
     downloadLink.href = blobUrl;
@@ -257,12 +257,16 @@ export class ActionMgr {
     document.body.removeChild(downloadLink);
   }
 
-  openBackingTrack() {
+  openBackingTrack(newTab) {
     const title = encodeURIComponent(this.stateMgr.doc.title);
     const data = encodeURIComponent(JSON.stringify(this.stateMgr.getAlternativeMusicStrings()));
     console.log(JSON.stringify(this.stateMgr.getAlternativeMusicStrings(), null, 2))
-    const url = `https://slowbubble.github.io/MidiChordSheet/#title=${title}&data=${data}`;
-    window.open(url, '_blank');
+    const url = `https://slowbubble.github.io/MidiChordSheet/#Start8n=0&WeirdSheet=1&SheetView=leadsheet&ViolaId=${this.stateMgr.urlId}&title=${title}&data=${data}`;
+    if (newTab) {
+      window.open(url, '_blank');
+    } else {
+      window.location.href = url;
+    }
   }
 
   setKeySig() {
