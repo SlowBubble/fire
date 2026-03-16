@@ -1063,6 +1063,36 @@ export class StateMgr {
     });
   }
 
+  evenlyDivideDurations() {
+    const cursorTime = this.getCursorTime();
+    const initiallySelectedCursorTime = this.getInitiallySelectedCursorTime();
+    if (initiallySelectedCursorTime === null || initiallySelectedCursorTime.equals(cursorTime)) {
+      return;
+    }
+    const voice = this.getCurrVoice();
+    if (!voice) {
+      return;
+    }
+    const startTime = cursorTime.lessThan(initiallySelectedCursorTime) ? cursorTime : initiallySelectedCursorTime;
+    const endTime = cursorTime.lessThan(initiallySelectedCursorTime) ? initiallySelectedCursorTime : cursorTime;
+    const arr = voice.noteGps.toArray();
+    const inInterval = arr.filter(noteGp =>
+      !noteGp.start.lessThan(startTime) && noteGp.start.lessThan(endTime)
+    );
+    if (inInterval.length === 0) {
+      return;
+    }
+    const totalDuration = endTime.minus(startTime);
+    const evenDuration = totalDuration.over(frac.build(inInterval.length));
+    inInterval.forEach((noteGp, idx) => {
+      noteGp.start = startTime.plus(evenDuration.times(frac.build(idx)));
+      noteGp.end = noteGp.start.plus(evenDuration);
+    });
+    const newVoice = Voice.fromNoteGpsArray(arr, voice.clef);
+    this.doc.voices[this.editor.currVoiceIdx] = newVoice;
+    this.setCursorTimeSyncPointer(cursorTime);
+  }
+
   serialize() {
     // console.log(JSON.stringify(this.toJson(), null, 2));
     return JSON.stringify(this.toJson());

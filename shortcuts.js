@@ -291,6 +291,15 @@ export function setup(actionMgr, stateMgr, eBanner, disablePub, hasMidiInputsFun
     actionMgr.insertGraceNote();
   });
 
+  hotkeys(`shift+e`, evt => {
+    evt.preventDefault();
+    const initiallySelectedCursorTime = stateMgr.getInitiallySelectedCursorTime();
+    const cursorTime = stateMgr.getCursorTime();
+    if (initiallySelectedCursorTime !== null && !initiallySelectedCursorTime.equals(cursorTime)) {
+      actionMgr.evenlyDivideDurations();
+    }
+  });
+
   hotkeys(`shift+l`, evt => {
     evt.preventDefault();
     actionMgr.updateLyrics();

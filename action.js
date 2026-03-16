@@ -121,6 +121,12 @@ export class ActionMgr {
     });
   }
 
+  evenlyDivideDurations() {
+    this.exec(_ => {
+      this.stateMgr.evenlyDivideDurations();
+    });
+  }
+
   swingify() {
     this.exec(_ => {
       this.stateMgr.swingify();
