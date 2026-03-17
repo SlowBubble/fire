@@ -377,12 +377,12 @@ export function setup(actionMgr, stateMgr, eBanner, disablePub, hasMidiInputsFun
     actionMgr.toggleClef();
   });
 
-  hotkeys(`shift+z`, evt => {
+  hotkeys(`${_cmdKeyString()}+shift+z`, evt => {
     evt.preventDefault();
     stateMgr.save(false, () => actionMgr.openBackingTrack());
   });
 
-  hotkeys('shift+b', evt => {
+  hotkeys('shift+z', evt => {
     evt.preventDefault();
     actionMgr.openBackingTrack(true);
   });

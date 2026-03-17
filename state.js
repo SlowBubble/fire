@@ -2082,6 +2082,25 @@ export class StateMgr {
     this.setCursorTimeSyncPointer(cursorTime);
   }
 
+  fillLastBarWithRest() {
+    const voice = this.getCurrVoice();
+    if (!voice) {
+      return;
+    }
+    const noteGpsArr = voice.noteGps.toArray();
+    if (noteGpsArr.length == 0) {
+      return;
+    }
+    const lastNoteGp = noteGpsArr[noteGpsArr.length - 1];
+    const durPerMeas = this.getDurationPerMeasure();
+    const lastMeasEnd = location.nextMeasureTime(lastNoteGp.start, durPerMeas);
+    if (lastNoteGp.end.lessThan(lastMeasEnd)) {
+      this.navTail();
+      this.upsertByDur([null], lastMeasEnd.minus(lastNoteGp.end));
+    }
+  }
+
+
   navUp() {
     const barsPerLine = 4;
     math.range(0, barsPerLine).forEach(_ => {

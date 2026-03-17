@@ -109,6 +109,7 @@ export class ActionMgr {
       this.stateMgr.toggleDisplayMelodyOnly();
     });
   }
+
   toggleDisplayLyrics() {
     this.exec(_ => {
       this.stateMgr.toggleDisplayLyrics();
@@ -264,6 +265,7 @@ export class ActionMgr {
   }
 
   openBackingTrack(newTab) {
+    this.stateMgr.fillLastBarWithRest();
     const title = encodeURIComponent(this.stateMgr.doc.title);
     const data = encodeURIComponent(JSON.stringify(this.stateMgr.getAlternativeMusicStrings()));
     console.log(JSON.stringify(this.stateMgr.getAlternativeMusicStrings(), null, 2))
