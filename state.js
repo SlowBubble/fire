@@ -1127,23 +1127,26 @@ export class StateMgr {
 
     const denomToUse = Math.max(step.denom, left.end.denom);
     // TODO what if left.end is a 1/6 instead of 1/8?
-    const roundedStep = frac.build(1, denomToUse);
+    let roundedStep = frac.build(1, denomToUse);
     let boundary = left.end;
     if (goLeft) {
-      if (left.getDuration().leq(roundedStep) || chunking.isPossibleTuplet(left)) {
-        boundary = left.start;
-        this.unsafeRemoveFromNoteGps();
-      } else {
-        boundary = left.end.minus(roundedStep);
+      if (chunking.isPossibleTuplet(left)) {
+        return;
       }
+      // If left note is too short, halve the step until it fits
+      while (left.getDuration().leq(roundedStep)) {
+        roundedStep = frac.build(1, roundedStep.denom * 2);
+      }
+      boundary = left.end.minus(roundedStep);
     } else {
-      if (right.getDuration().leq(roundedStep) || chunking.isPossibleTuplet(right)) {
-        boundary = right.end;
-        this.skipRight();
-        this.unsafeRemoveFromNoteGps();
-      } else {
-        boundary = right.start.plus(roundedStep);
+      if (chunking.isPossibleTuplet(right)) {
+        return;
       }
+      // If right note is too short, halve the step until it fits
+      while (right.getDuration().leq(roundedStep)) {
+        roundedStep = frac.build(1, roundedStep.denom * 2);
+      }
+      boundary = right.start.plus(roundedStep);
     }
     left.end = boundary;
     right.start = boundary;
